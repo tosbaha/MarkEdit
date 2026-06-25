@@ -12,7 +12,7 @@ import MarkEditKit
 enum AppUpdater {
   private enum Constants {
     static let defaultOSVer = "1.0.0"
-    static let endpoint = "https://api.github.com/repos/tosbaha/MarkEdit/releases/latest"
+    static let endpoint = "https://api.github.com/repos/MarkEdit-app/MarkEdit/releases/latest"
     static let decoder = {
       let decoder = JSONDecoder()
       decoder.keyDecodingStrategy = .convertFromSnakeCase
@@ -52,11 +52,14 @@ enum AppUpdater {
       return
     }
 
-    // Check if the version is different and wasn't released to MAS
+    // Check if the version is newer and wasn't released to MAS
     let currentVersion = Bundle.main.shortVersionString ?? "0.0.0"
     Logger.assert(currentVersion != "0.0.0", "Invalid current version string")
 
-    guard version.name != currentVersion && !version.releasedToMAS else {
+    let releaseVersion = version.name.hasPrefix("v") ? String(version.name.dropFirst()) : version.name
+    let isNewer = releaseVersion.compare(currentVersion, options: .numeric) == .orderedDescending
+
+    guard isNewer && !version.releasedToMAS else {
       return {
         guard explicitly else {
           return
