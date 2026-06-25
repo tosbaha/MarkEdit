@@ -12,7 +12,7 @@ import MarkEditKit
 enum AppUpdater {
   private enum Constants {
     static let defaultOSVer = "1.0.0"
-    static let endpoint = "https://api.github.com/repos/tosbaha/MarkEdit/releases/latest"
+    static let endpoint = "https://api.github.com/repos/MarkEdit-app/MarkEdit/releases/latest"
     static let decoder = {
       let decoder = JSONDecoder()
       decoder.keyDecodingStrategy = .convertFromSnakeCase
