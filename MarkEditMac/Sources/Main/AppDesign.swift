@@ -6,6 +6,7 @@
 //
 
 import AppKit
+import FoundationModels
 
 @MainActor
 enum AppDesign {
@@ -38,6 +39,21 @@ enum AppDesign {
     modernStyle
   }
 
+  /**
+   Returns `true` to always enable `Show Writing Tools` in macOS Golden Gate.
+
+   [macOS 27] Apple Bug: `Ask Siri` and `Show Writing Tools` are both missing.
+   */
+  static var forceWritingTools: Bool {
+    guard #available(macOS 27.0, *) else {
+      return false
+    }
+
+    // Don't use NSWritingToolsCoordinator.isWritingToolsAvailable here,
+    // it returns `false` when "New Siri" is enabled.
+    return SystemLanguageModel.default.isAvailable
+  }
+
   static var dividerAlpha: Double {
     modernStyle ? 0.7 : 1.0
   }
@@ -61,5 +77,18 @@ enum AppDesign {
     }
 
     return NSGlassEffectView.self
+  }
+
+  static func migrateMainMenuIcons(delegate: AppDelegate) {
+    guard Self.menuIconEvolution else {
+      return
+    }
+
+    delegate.fileNewTabItem?.image = NSImage(
+      systemSymbolName: Icons.interfaceWindowOnRectangle,
+      accessibilityDescription: nil
+    )
+
+    delegate.fileReopenClosedTabItem?.image = delegate.fileNewTabItem?.image
   }
 }

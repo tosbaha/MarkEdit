@@ -14,10 +14,14 @@ extension EditorViewController {
   }
 
   var statisticsSourceView: NSView? {
-    // Present the popover relative to the toolbar item
-    view.window?.toolbarButton(with: statisticsItem.itemIdentifier) ??
-    // Present the popover relative to the document title view
-    view.window?.toolbarTitleView
+    let sourceView =
+      // Relative to the toolbar item
+      view.window?.toolbarButton(with: statisticsItem.itemIdentifier) ??
+      // Relative to the document title view
+      view.window?.titlebarDocumentTitleView
+
+    Logger.assert(sourceView != nil, "Missing source view")
+    return sourceView
   }
 
   private enum Constants {
@@ -53,13 +57,17 @@ extension EditorViewController {
     }
 
     // Pop up the menu relative to the document title view
-    if let menu = (tableOfContentsItem as? NSMenuToolbarItem)?.menu,
-       let sourceView = view.window?.toolbarTitleView {
-      menu.popUp(
-        positioning: nil,
-        at: CGPoint(x: sourceView.bounds.minX, y: sourceView.bounds.maxY + 15),
-        in: sourceView
-      )
+    if let menu = (tableOfContentsItem as? NSMenuToolbarItem)?.menu {
+      if let sourceView = view.window?.titlebarDocumentTitleView {
+        menu.popUp(
+          positioning: nil,
+          at: CGPoint(x: sourceView.bounds.minX, y: sourceView.bounds.maxY + 15),
+          in: sourceView
+        )
+      } else {
+        Logger.assertFail("Missing document title view")
+      }
+
       return
     }
   }
@@ -262,11 +270,16 @@ private extension EditorViewController {
   }
 
   var writingToolsItem: NSToolbarItem? {
-    if #available(macOS 15.1, *), let menu = systemWritingToolsMenu {
+    if #available(macOS 15.1, *), let menu = NSApp.appDelegate?.activeWritingToolsItem?.submenu {
       return .with(identifier: .writingTools, menu: menu.copiedMenu)
-    } else {
-      return nil
     }
+
+    // [macOS 27] Always enable "Writing Tools"
+    if AppDesign.forceWritingTools, let menu = NSMenuItem.systemWritingToolsItem?.submenu {
+      return .with(identifier: .writingTools, menu: menu.copiedMenu)
+    }
+
+    return nil
   }
 
   func updateTableOfContentsMenu(_ menu: NSMenu) {

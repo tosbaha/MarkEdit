@@ -12,7 +12,7 @@ public extension NSPasteboard {
   }
 
   var hasText: Bool {
-    pasteboardItems?.contains { $0.types.contains(.string) } == true
+    canReadObject(forClasses: [NSString.self, NSAttributedString.self], options: nil)
   }
 
   var string: String? {
@@ -47,7 +47,7 @@ public extension NSPasteboard {
     }
 
     // This alerts the user only when the pasteboard really contains links
-    let values = try? await NSPasteboard.general.detectedValues(for: [\.links])
+    let values = try? await Self.general.detectedValues(for: [\.links])
     return values?.links.first?.url.absoluteString
   }
 
@@ -69,8 +69,16 @@ public extension NSPasteboard {
       setString(url, forType: .URL)
     }
 
-    // Handle the case where the pasted content has different line endings
-    if let lineBreak, let sanitized = string?.sanitizing(lineBreak: lineBreak), sanitized != string {
+    let sanitized: String? = {
+      // Prefer pasting plain text for source code
+      let containsCode = (types ?? []).contains { $0.rawValue.hasPrefix("SourceEditor") }
+      // Normalize line endings when the pasted content uses a different style
+      let lineBreakNormalized = (lineBreak.flatMap { string?.sanitizing(lineBreak: $0) }) ?? string
+      // Paste plain text for source code, or whenever line endings were changed
+      return (containsCode || lineBreakNormalized != string) ? lineBreakNormalized : nil
+    }()
+
+    if let sanitized {
       let savedItems = getDataItems()
       declareTypes([.string], owner: nil)
       setString(sanitized, forType: .string)
@@ -90,7 +98,7 @@ public extension NSPasteboard {
 
 private extension NSPasteboard {
   func getDataItems() -> [NSPasteboard.PasteboardType: Data] {
-    (types ?? []).reduce(into: [NSPasteboard.PasteboardType: Data]()) { items, type in
+    (types ?? []).reduce(into: [Self.PasteboardType: Data]()) { items, type in
       items[type] = data(forType: type)
     }
   }

@@ -14,6 +14,12 @@ import MarkEditKit
 /// The underlying file is stored as "settings.json" in AppCustomization.
 enum AppRuntimeConfig {
   struct Definition: Codable {
+    enum ToolbarTranslucency: String, Codable {
+      case light = "light"
+      case regular = "regular"
+      case heavy = "heavy"
+    }
+
     enum UpdateBehavior: String, Codable {
       case quiet = "quiet"
       case notify = "notify"
@@ -36,6 +42,7 @@ enum AppRuntimeConfig {
     let visibleLineBreakCharacter: String?
     let searchNormalizers: [String: String]?
     let nativeSearchQuerySync: Bool?
+    let toolbarTranslucency: ToolbarTranslucency?
     let customToolbarItems: [CustomToolbarItem]?
     let updateBehavior: UpdateBehavior?
     let checksForUpdates: Bool? // [Deprecated] Kept for backward compatibility
@@ -59,6 +66,7 @@ enum AppRuntimeConfig {
       case visibleLineBreakCharacter = "editor.visibleLineBreakCharacter"
       case searchNormalizers = "editor.searchNormalizers"
       case nativeSearchQuerySync = "editor.nativeSearchQuerySync"
+      case toolbarTranslucency = "editor.toolbarTranslucency"
       case customToolbarItems = "editor.customToolbarItems"
       case updateBehavior = "general.updateBehavior"
       case checksForUpdates = "general.checksForUpdates"
@@ -150,6 +158,16 @@ enum AppRuntimeConfig {
     currentDefinition?.nativeSearchQuerySync ?? false
   }
 
+  /// Alpha values of the tinted toolbar overlay: (tinted window, plain window).
+  /// Heavier translucency means more transparent, i.e., smaller alpha values.
+  static var toolbarTintAlphaValues: (tinted: Double, plain: Double) {
+    switch currentDefinition?.toolbarTranslucency ?? .regular {
+    case .light: return (0.9, 0.6)
+    case .regular: return (0.7, 0.4)
+    case .heavy: return (0.5, 0.2)
+    }
+  }
+
   static var customToolbarItems: [CustomToolbarItem] {
     currentDefinition?.customToolbarItems ?? []
   }
@@ -173,7 +191,15 @@ enum AppRuntimeConfig {
   }
 
   static var disableOpenPanelOptions: Bool {
-    currentDefinition?.disableOpenPanelOptions ?? defaultDisableOpenPanelOptions
+    currentDefinition?.disableOpenPanelOptions ?? ({
+      // [macOS 26] Revisit this later,
+      // NSOpenPanel.accessoryView can significantly slow down the file opening process.
+      if #available(macOS 26.0, *) {
+        return true
+      }
+
+      return false
+    })()
   }
 
   static var disableCorsRestrictions: Bool {
@@ -240,12 +266,13 @@ private extension AppRuntimeConfig {
     visibleLineBreakCharacter: nil,
     searchNormalizers: nil,
     nativeSearchQuerySync: false,
+    toolbarTranslucency: nil, // Keeping nil allows us to tweak defaults later
     customToolbarItems: [],
     updateBehavior: .quiet,
     checksForUpdates: nil,
     defaultOpenDirectory: nil,
     defaultSaveDirectory: nil,
-    disableOpenPanelOptions: defaultDisableOpenPanelOptions,
+    disableOpenPanelOptions: nil, // [macOS 26] Future macOS with the fix can be opted out
     disableCorsRestrictions: true,
     disabledWebKitFeatures: nil,
     preferredTerminalApp: nil,
@@ -274,15 +301,5 @@ private extension AppRuntimeConfig {
     Logger.assert(jsonData != nil, "Failed to encode object: \(definition)")
 
     return jsonData
-  }
-
-  static var defaultDisableOpenPanelOptions: Bool {
-    // [macOS 26] Revisit this later,
-    // NSOpenPanel.accessoryView can significantly slow down the file opening process.
-    if #available(macOS 26.0, *) {
-      return true
-    }
-
-    return false
   }
 }

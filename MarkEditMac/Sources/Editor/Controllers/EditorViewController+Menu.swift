@@ -44,13 +44,6 @@ extension EditorViewController {
     item.submenu = menu
     return item
   }
-
-  @available(macOS 15.1, *)
-  var systemWritingToolsMenu: NSMenu? {
-    NSApp.appDelegate?.mainEditMenu?.items.first {
-      $0.identifier?.rawValue == "__NSTextViewContextSubmenuIdentifierWritingTools"
-    }?.submenu
-  }
 }
 
 // MARK: - NSMenuDelegate
@@ -355,18 +348,19 @@ private extension EditorViewController {
   }
 
   @IBAction func createNewTab(_ sender: Any?) {
-    let tabbingMode = AppPreferences.Window.tabbingMode
     let window = view.window
+    let tabbingMode = window?.tabbingMode
 
-    // Force "preferred" to always create a tab
-    AppPreferences.Window.tabbingMode = .preferred
+    // Force tabbing without mutating the persisted preference
+    EditorWindow.forcedTabbing = true
     window?.tabbingMode = .preferred
     NSDocumentController.shared.newDocument(sender)
 
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-      // Revert to user preference after a delay
-      AppPreferences.Window.tabbingMode = tabbingMode
-      window?.tabbingMode = tabbingMode
+    DispatchQueue.main.async {
+      EditorWindow.forcedTabbing = false
+      if let tabbingMode {
+        window?.tabbingMode = tabbingMode
+      }
     }
   }
 

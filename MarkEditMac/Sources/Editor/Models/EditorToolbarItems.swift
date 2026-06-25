@@ -169,7 +169,7 @@ private extension NSToolbarItem.Identifier {
     case .statistics: return Localized.Toolbar.statistics
     case .shareDocument: return Localized.Toolbar.shareDocument
     case .copyPandocCommand: return Localized.Toolbar.copyPandocCommand
-    case .writingTools: return Localized.WritingTools.title
+    case .writingTools: return Localized.WritingTools.featureName
     default: fatalError("Unexpected toolbar item identifier: \(self)")
     }
   }
@@ -177,7 +177,7 @@ private extension NSToolbarItem.Identifier {
   var itemIcon: String {
     switch self {
     case .tableOfContents: return Icons.listBulletRectangle
-    case .formatHeaders: return Icons.number
+    case .formatHeaders: return Icons.numberSign
     case .toggleBold: return Icons.bold
     case .toggleItalic: return Icons.italic
     case .toggleStrikethrough: return Icons.strikethrough
@@ -191,7 +191,7 @@ private extension NSToolbarItem.Identifier {
     case .textFormat: return Icons.textformat
     case .statistics: return Icons.chartPie
     case .shareDocument: return Icons.squareAndArrowUp
-    case .copyPandocCommand: return Icons.terminal
+    case .copyPandocCommand: return Icons.appleTerminal
     case .writingTools: return Icons.wandAndSparkles
     default: fatalError("Unexpected toolbar item identifier: \(self)")
     }
